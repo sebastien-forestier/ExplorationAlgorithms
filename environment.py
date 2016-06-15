@@ -6,7 +6,7 @@ from matplotlib.patches import Circle
 
 
 from explauto.environment.dynamic_environment import DynamicEnvironment
-from combined_env import HierarchicallyCombinedEnvironment
+from modular_environment import HierarchicalEnvironment
 
 from explauto.utils import bounds_min_max
 from explauto.environment.environment import Environment
@@ -160,7 +160,7 @@ class ArmBall(DynamicEnvironment):
         
         dynamic_environment_config = dict(
             env_cfg=arm_ball_cfg,
-            env_cls=HierarchicallyCombinedEnvironment,
+            env_cls=HierarchicalEnvironment,
             m_mins=[-1.] * 3 * 3, 
             m_maxs=[1.] * 3 * 3, 
             s_mins=[-1] * 3 * 2,

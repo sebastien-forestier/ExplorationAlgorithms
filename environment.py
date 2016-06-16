@@ -87,6 +87,7 @@ class Ball(Environment):
         self.size_sq = size * size
         self.color = color
         self.initial_position = initial_position
+        self.last_hand_pos = None
         self.reset()
         
         
@@ -103,7 +104,7 @@ class Ball(Environment):
         if self.move or ((m[0] - self.pos[0]) ** 2 + (m[1] - self.pos[1]) ** 2 < self.size_sq):
             self.pos = m[0:2]
             self.move = 1
-        
+        self.last_hand_pos = m
         self.logs.append([self.pos,
                           self.move])
         return list(self.pos)

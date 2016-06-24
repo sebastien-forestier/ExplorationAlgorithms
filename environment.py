@@ -384,7 +384,7 @@ class Environment3(DynamicEnvironment):
             size=0.1,
             initial_position=[0.3, 1.],
             ball_type="random",
-            color="r")
+            color="g")
         
         balls_config = dict(
             s_mins = list([-2.]*8),

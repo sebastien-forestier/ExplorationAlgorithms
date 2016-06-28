@@ -14,6 +14,15 @@ from explauto.environment.simple_arm.simple_arm import joint_positions
 from explauto.utils.utils import rand_bounds
 
 
+def arm_lengths(n_joints):
+    if n_joints == 3:
+        return [0.5, 0.3, 0.2]
+    elif n_joints == 7:
+        return [0.3, 0.2, 0.2, 0.1, 0.1, 0.05, 0.05]
+    else:
+        return [1./n_joints] * n_joints
+    
+
 class Arm(Environment):
     use_process = True
     def __init__(self, m_mins, m_maxs, s_mins, s_maxs,
@@ -79,7 +88,7 @@ class Arm(Environment):
         
 class Ball(Environment):
     def __init__(self, m_mins, m_maxs, s_mins, s_maxs,
-                 size, initial_position, ball_type="magnetic", color='y'):
+                 size, initial_position, ball_type="magnetic", color='y', random_ball_noise=0.2):
         
         Environment.__init__(self, m_mins, m_maxs, s_mins, s_maxs)
 
@@ -88,6 +97,7 @@ class Ball(Environment):
         self.size_sq = size * size
         self.color = color
         self.initial_position = initial_position
+        self.random_ball_noise = random_ball_noise
         self.reset()
         
         
@@ -106,7 +116,7 @@ class Ball(Environment):
                 self.pos = m[0:2]
                 self.move = 1
         elif self.ball_type == "random":
-            self.pos = self.pos + np.random.randn(2) * 0.2
+            self.pos = self.pos + np.random.randn(2) * self.random_ball_noise
              
         self.logs.append([self.pos,
                           self.move])
@@ -128,17 +138,17 @@ class Ball(Environment):
         return [self.circle]
         
         
-class Environment1(DynamicEnvironment):
-    def __init__(self):
+class ArmBall(DynamicEnvironment):
+    def __init__(self, n_joints=3, n_dmp_basis=3, goal_size=1.):
         
         arm_config = dict(
-            m_mins=[-1.] * 3,
-            m_maxs=[1.] * 3, 
+            m_mins=[-1.] * n_joints,
+            m_maxs=[1.] * n_joints, 
             s_mins=[-1.] * 3,
             s_maxs=[1.] * 3, 
-            lengths=[0.5, 0.3, 0.2], 
+            lengths=arm_lengths(n_joints), 
             angle_shift=0.5,
-            rest_state=[0.] * 3)
+            rest_state=[0.] * n_joints)
         
         ball_config = dict(
             m_mins=[-1.] * 2,
@@ -150,8 +160,8 @@ class Environment1(DynamicEnvironment):
             color="b")
         
         arm_ball_cfg = dict(
-            m_mins=[-1.] * 3,
-            m_maxs=[1.] * 3,
+            m_mins=[-1.] * n_joints,
+            m_maxs=[1.] * n_joints,
             s_mins=[-1.] * 2,
             s_maxs=[1.] * 2,
             top_env_cls=Ball, 
@@ -165,18 +175,20 @@ class Environment1(DynamicEnvironment):
         dynamic_environment_config = dict(
             env_cfg=arm_ball_cfg,
             env_cls=HierarchicalEnvironment,
-            m_mins=[-1.] * 3 * 3, 
-            m_maxs=[1.] * 3 * 3, 
-            s_mins=[-1] * 2,
-            s_maxs=[1] * 2,
-            n_bfs=3,
+            m_mins=[-1.] * n_joints * n_dmp_basis, 
+            m_maxs=[1.] * n_joints * n_dmp_basis, 
+            s_mins=[-goal_size] * 2,
+            s_maxs=[goal_size] * 2,
+            n_bfs=n_dmp_basis,
             move_steps=50, 
-            n_dynamic_motor_dims=3,
+            n_dynamic_motor_dims=n_joints,
             n_dynamic_sensori_dims=2,
             sensori_traj_type="end_point",
             max_params=1000)
         
         DynamicEnvironment.__init__(self, **dynamic_environment_config)
+        
+    def random_motor(self): return self.random_motors()[0]
         
        
 class Stick(Environment):
@@ -256,86 +268,38 @@ class Stick(Environment):
             line.set_data(data[0], data[1])
         return self.lines
 
- 
-class Environment2(DynamicEnvironment):
-    def __init__(self):
         
-        arm_config = dict(
-            m_mins=[-1.] * 7,
-            m_maxs=[1.] * 7, 
-            s_mins=[-1.] * 3,
-            s_maxs=[1.] * 3, 
-            lengths=[0.3, 0.2, 0.2, 0.1, 0.1, 0.05, 0.05], 
-            angle_shift=0.5,
-            rest_state=[0.] * 7)
-        
-        ball_config = dict(
-            m_mins=[-1.] * 2,
-            m_maxs=[1.] * 2, 
-            s_mins=[-1.] * 2,
-            s_maxs=[1.] * 2,
-            size=0.1,
-            initial_position=[0.6, 0.6],
-            color="b")
-        
-        arm_ball_cfg = dict(
-            m_mins=[-1.] * 7,
-            m_maxs=[1.] * 7,
-            s_mins=[-1.] * 2,
-            s_maxs=[1.] * 2,
-            top_env_cls=Ball, 
-            lower_env_cls=Arm, 
-            top_env_cfg=ball_config, 
-            lower_env_cfg=arm_config, 
-            fun_m_lower= lambda m:m,
-            fun_s_lower=lambda m,s:s[0:2],
-            fun_s_top=lambda m,s_lower,s:s)
-            #fun_s_top=lambda m,s_lower,s:s_lower[0:2] + s)
-        
-            
-        goal_size = 10.
-            
-        dynamic_environment_config = dict(
-            env_cfg=arm_ball_cfg,
-            env_cls=HierarchicalEnvironment,
-            m_mins=[-1.] * 3 * 7, 
-            m_maxs=[1.] * 3 * 7, 
-            s_mins=[-goal_size] * 2,
-            s_maxs=[goal_size] * 2,
-            n_bfs=3,
-            move_steps=50, 
-            n_dynamic_motor_dims=7,
-            n_dynamic_sensori_dims=2, 
-            sensori_traj_type="end_point",
-            max_params=1000)
-        
-        DynamicEnvironment.__init__(self, **dynamic_environment_config)
-        
-        
-class Environment3(DynamicEnvironment):
-    def __init__(self):
+class ArmStickBalls(DynamicEnvironment):
+    def __init__(self, 
+                 n_joints=7, 
+                 n_dmp_basis=3, 
+                 goal_size=2., 
+                 stick_handle_tol=0.05, 
+                 stick_length=0.3, 
+                 ball_size=0.1,
+                 random_ball_noise=0.2):
 
         arm_config = dict(
-            m_mins=[-1.] * 7,
-            m_maxs=[1.] * 7, 
+            m_mins=[-1.] * n_joints,
+            m_maxs=[1.] * n_joints, 
             s_mins=[-1.] * 3,
             s_maxs=[1.] * 3, 
-            lengths=[0.3, 0.2, 0.2, 0.1, 0.1, 0.05, 0.05], 
+            lengths=arm_lengths(n_joints), 
             angle_shift=0.5,
-            rest_state=[0.] * 7)
+            rest_state=[0.] * n_joints)
         
         stick_config = dict(
             m_mins=[-1, -1, -1], # Hand pos + arm angle
             m_maxs=[1, 1, 1], 
             s_mins=[-2, -2],  # Tool pos
             s_maxs=[2, 2],
-            length=0.3, 
-            handle_tol=0.05, 
+            length=stick_length, 
+            handle_tol=stick_handle_tol, 
             rest_state=[-0.75, 0.25, 0.75])
                 
         arm_stick_cfg = dict(
-            m_mins=list([-1.] * 7), # 3DOF + gripper
-            m_maxs=list([1.] * 7),
+            m_mins=list([-1.] * n_joints), # 3DOF + gripper
+            m_maxs=list([1.] * n_joints),
             s_mins=list([-1.] * 4),
             s_maxs=list([1.] * 4),
             top_env_cls=Stick, 
@@ -351,7 +315,7 @@ class Environment3(DynamicEnvironment):
             m_maxs=[2.] * 2, 
             s_mins=[-2.] * 2,
             s_maxs=[2.] * 2,
-            size=0.1,
+            size=ball_size,
             initial_position=[0.6, 0.6],
             ball_type="magnetic",
             color="b")
@@ -374,7 +338,8 @@ class Environment3(DynamicEnvironment):
             size=0.1,
             initial_position=[0.3, 1.],
             ball_type="random",
-            color="y")
+            color="y",
+            random_ball_noise=random_ball_noise)
         
         random_ball2_config = dict(
             m_mins=[-2.] * 2,
@@ -384,19 +349,19 @@ class Environment3(DynamicEnvironment):
             size=0.1,
             initial_position=[0.3, 1.],
             ball_type="random",
-            color="g")
+            color="g",
+            random_ball_noise=random_ball_noise)
         
         balls_config = dict(
             s_mins = list([-2.]*8),
             s_maxs = list([2.]*8),
             envs_cls = [Ball, Ball, Ball, Ball], 
             envs_cfg = [ball_config, static_ball_config, random_ball_config, random_ball2_config], 
-            combined_s = lambda s:s
-        )
+            combined_s = lambda s:s)
         
         arm_stick_balls_cfg = dict(
-            m_mins=[-1.] * 7,
-            m_maxs=[1.] * 7,
+            m_mins=[-1.] * n_joints,
+            m_maxs=[1.] * n_joints,
             s_mins=[-1.] * 12,
             s_maxs=[1.] * 12,
             top_env_cls=FlatEnvironment, 
@@ -406,23 +371,22 @@ class Environment3(DynamicEnvironment):
             fun_m_lower= lambda m:m,
             fun_s_lower=lambda m,s:s[2:4]+s[2:4]+s[2:4]+s[2:4],
             fun_s_top=lambda m,s_lower,s:s_lower + s)
-        
-            
-        goal_size = 2.
             
         dynamic_environment_config = dict(
             env_cfg=arm_stick_balls_cfg,
             env_cls=HierarchicalEnvironment,
-            m_mins=[-1.] * 3 * 7, 
-            m_maxs=[1.] * 3 * 7, 
-            s_mins=[-goal_size] * 3 * 12,
-            s_maxs=[goal_size] * 3 * 12,
-            n_bfs=3,
+            m_mins=[-1.] * n_dmp_basis * n_joints, 
+            m_maxs=[1.] * n_dmp_basis * n_joints, 
+            s_mins=[-goal_size] * n_dmp_basis * 12,
+            s_maxs=[goal_size] * n_dmp_basis * 12,
+            n_bfs=n_dmp_basis,
             move_steps=50, 
-            n_dynamic_motor_dims=7,
+            n_dynamic_motor_dims=n_joints,
             n_dynamic_sensori_dims=8, 
             sensori_traj_type="samples",
             max_params=1000)
 
         DynamicEnvironment.__init__(self, **dynamic_environment_config)
 
+    def random_motor(self): return self.random_motors()[0]
+    

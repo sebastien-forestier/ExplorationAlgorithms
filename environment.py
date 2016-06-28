@@ -50,11 +50,11 @@ class Arm(Environment):
         x, y = joint_positions(angles, self.lengths, 'std')
         x, y = [np.hstack((0., a)) for a in x, y]
         l = []
-        l += ax.plot(x, y, 'grey', lw=4, **kwargs_plot)
-        l += ax.plot(x[0], y[0], 'sk', ms=8, **kwargs_plot)
+        l += ax.plot(x, y, 'grey', lw=4, animated=True, **kwargs_plot)
+        l += ax.plot(x[0], y[0], 'sk', ms=8, animated=True, **kwargs_plot)
         for i in range(len(self.lengths)-1):
-            l += ax.plot(x[i+1], y[i+1], 'ok', ms=8, **kwargs_plot)
-        l += ax.plot(x[-1], y[-1], 'or', ms=8, **kwargs_plot)
+            l += ax.plot(x[i+1], y[i+1], 'ok', ms=8, animated=True, **kwargs_plot)
+        l += ax.plot(x[-1], y[-1], 'or', ms=8, animated=True, **kwargs_plot)
         self.lines = l
         return l 
         
@@ -115,7 +115,7 @@ class Ball(Environment):
     def plot(self, ax, i, **kwargs_plot):
         self.logs = self.logs[-50:]
         pos = self.logs[i][0]     
-        self.circle = Circle((pos[0], pos[1]), self.size, fc=self.color, **kwargs_plot)
+        self.circle = Circle((pos[0], pos[1]), self.size, fc=self.color, animated=True, **kwargs_plot)
         ax.add_patch(self.circle)  
         return [self.circle]
         
@@ -237,9 +237,9 @@ class Stick(Environment):
         handle_pos = self.logs[i][0]
         end_pos = self.logs[i][2]
         l = []
-        l += ax.plot([handle_pos[0], end_pos[0]], [handle_pos[1], end_pos[1]], '-', color="g", lw=6, **kwargs_plot)
-        l += ax.plot(handle_pos[0], handle_pos[1], 'o', color = "r", ms=12, **kwargs_plot)
-        l += ax.plot(end_pos[0], end_pos[1], 'o', color = "b", ms=12, **kwargs_plot)
+        l += ax.plot([handle_pos[0], end_pos[0]], [handle_pos[1], end_pos[1]], '-', color="g", lw=6, animated=True, **kwargs_plot)
+        l += ax.plot(handle_pos[0], handle_pos[1], 'o', color = "r", ms=12, animated=True, **kwargs_plot)
+        l += ax.plot(end_pos[0], end_pos[1], 'o', color = "b", ms=12, animated=True, **kwargs_plot)
         self.lines = l
         return l 
         

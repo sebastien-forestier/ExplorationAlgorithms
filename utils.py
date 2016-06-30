@@ -66,3 +66,5 @@ def display_movement(fig, ax, environment, time_step=0.04):
         if remain > 0:
             time.sleep(remain)
     time.sleep(1)
+    
+    

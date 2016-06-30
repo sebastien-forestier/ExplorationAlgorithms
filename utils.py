@@ -1,6 +1,34 @@
 import numpy as np
 import time
 
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.patches import Circle
+matplotlib.rcParams['figure.figsize'] = (6.0, 6.0)
+from numpy import pi, array, linspace, hstack, zeros, transpose
+from matplotlib import animation
+from IPython.display import HTML, display, Image, clear_output
+from ipywidgets import interact_manual
+from numpy.random import random, normal
+
+from explauto import SensorimotorModel
+from explauto.sensorimotor_model.non_parametric import NonParametric
+from explauto import InterestModel
+from explauto.interest_model.discrete_progress import DiscretizedProgress
+from explauto.utils import rand_bounds, bounds_min_max, softmax_choice, prop_choice
+from explauto.environment.dynamic_environment import DynamicEnvironment
+from explauto.interest_model.competences import competence_exp, competence_dist
+from explauto.environment.modular_environment import FlatEnvironment, HierarchicalEnvironment
+
+from environment import Arm, Ball, Stick, ArmBall, ArmStickBalls
+from learning_module import LearningModule
+#from utils import compute_explo, display_movement
+
+grid_size = 10
+
+
 def compute_explo(data, mins, maxs, gs=100):
     n = len(mins)
     if len(data) == 0:

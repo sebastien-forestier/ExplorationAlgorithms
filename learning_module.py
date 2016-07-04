@@ -130,7 +130,8 @@ class LearningModule(Agent):
         return self.m        
     
     def update_sm(self, m, s): 
-        self.sensorimotor_model.update(m, s)    
+        self.sensorimotor_model.update(m, s)   
+        self.t += 1 
     
     def update_im(self, m, s):
         if self.t >= self.motor_babbling_n_iter:
@@ -143,4 +144,3 @@ class LearningModule(Agent):
         self.update_sm(m, s)
         if has_control:
             self.last_interest = self.update_im(m, s)
-        self.t += 1

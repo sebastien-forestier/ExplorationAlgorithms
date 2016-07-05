@@ -67,3 +67,83 @@ def display_movement(fig, ax, environment, time_step=0.04):
     time.sleep(1)
     
     
+def random_motor_babbling(trial, iterations):
+    env = ArmStickBalls()
+    np.random.seed(trial)
+    explored_s = []
+    res = []
+    for iteration in range(iterations):
+        m = env.random_motor()
+        s = env.update(m)
+        if (len(explored_s) == 0) or abs(s[17] - 0.6) > 0.001:
+            explored_s += [s]
+        if (iteration+1) % (iterations/10) == 0:
+            res += [int(compute_explo(array(explored_s)[:,[14,17]], array([-2., -2.]), array([2., 2.]), gs=grid_size))]
+    return res
+
+def random_goal_babbling(trial, iterations):
+    env = ArmStickBalls()
+    np.random.seed(trial)
+    explored_s = []
+    res = []
+    sigma_explo_ratio = 0.05
+    sm_model = SensorimotorModel.from_configuration(env.conf, 'nearest_neighbor', 'default')
+    m = env.random_motor()
+    s = env.update(m)
+    sm_model.update(m, s)
+    for iteration in range(iterations):
+        if (not sm_model.bootstrapped_s) or random() < 0.2:
+            m = env.random_motor()
+        else:
+            s_goal = rand_bounds(env.conf.s_bounds)[0]
+            m = sm_model.model.infer_order(tuple(s_goal))
+            m = normal(m, sigma_explo_ratio)
+        s = env.update(m) # observe the sensory effect s (36D): the trajectory of all objects
+        sm_model.update(m, s) # update sensorimotor model
+        if (len(explored_s) == 0) or abs(s[17] - 0.6) > 0.001:
+            explored_s += [s]
+        if (iteration+1) % (iterations/10) == 0:
+            res += [int(compute_explo(array(explored_s)[:,[14,17]], array([-2., -2.]), array([2., 2.]), gs=grid_size))]
+    return res
+
+def active_model_babbling(trial, iterations):
+    env = ArmStickBalls()
+    np.random.seed(trial)
+    explored_s = []
+    res = []
+    n_explore=4
+    m_ndims = env.conf.m_ndims # number of motor parameters
+    m_space = range(m_ndims)
+    s_hand  = range(m_ndims, m_ndims+6)
+    s_tool  = range(m_ndims+6, m_ndims+12)
+    s_ball1 = range(m_ndims+12, m_ndims+18)
+    s_ball2 = range(m_ndims+18, m_ndims+24)
+    s_ball3 = range(m_ndims+24, m_ndims+30)
+    s_ball4 = range(m_ndims+30, m_ndims+36)
+    learning_modules = {}
+    learning_modules['mod1'] = LearningModule("mod1", m_space, s_hand, env.conf)
+    learning_modules['mod2'] = LearningModule("mod2", m_space, s_tool, env.conf)
+    learning_modules['mod3'] = LearningModule("mod3", m_space, s_ball1, env.conf)
+    learning_modules['mod4'] = LearningModule("mod4", m_space, s_ball2, env.conf)
+    learning_modules['mod5'] = LearningModule("mod5", m_space, s_ball3, env.conf)
+    learning_modules['mod6'] = LearningModule("mod6", m_space, s_ball4, env.conf)
+    for step in range(iterations / (n_explore + 1)):
+        interests = [learning_modules[mid].interest() for mid in learning_modules.keys()]
+        #interests_evolution.append(interests)
+        babbling_module = learning_modules.values()[prop_choice(interests, eps=0.2)]
+        m_list = babbling_module.produce(n=n_explore)
+        for m in m_list:
+            s = env.update(m) # execute this command and observe the corresponding sensory effect
+            if (len(explored_s) == 0) or abs(s[17] - 0.6) > 0.001:
+                explored_s += [s]
+            for mid in learning_modules.keys():
+                learning_modules[mid].update_sm(m, learning_modules[mid].get_s(array(list(m) + list(s))))
+        m = babbling_module.infer(babbling_module.expl_dims, babbling_module.inf_dims, babbling_module.x, n=1, explore=False)    
+        s = env.update(m) # execute this command and observe the corresponding sensory effect
+        babbling_module.update_im(m, babbling_module.get_s(array(list(m)+list(s))))
+        for mid in learning_modules.keys():
+            learning_modules[mid].update_sm(m, learning_modules[mid].get_s(array(list(m) + list(s))))
+        if (step+1) % ((iterations / (n_explore + 1))/10) == 0:
+            res += [int(compute_explo(array(explored_s)[:,[14,17]], array([-2., -2.]), array([2., 2.]), gs=grid_size))]
+    return res
+

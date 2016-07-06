@@ -147,3 +147,38 @@ def active_model_babbling(trial, iterations):
             res += [int(compute_explo(array(explored_s)[:,[14,17]], array([-2., -2.]), array([2., 2.]), gs=grid_size))]
     return res
 
+#from multiprocessing import Pool
+#from subprocess import call
+#import cPickle
+#import numpy as np
+
+#trials = 30
+#iterations = 100000
+    
+#def f(condition, trial):
+#    call("python run.py " + condition + " " + str(trial) + " " + str(iterations), shell=True)
+#    log_dir = './logs/'
+#    filename = condition + str(trial) + '.pickle'
+#    with open(log_dir + filename, 'r') as f:
+#        res = cPickle.load(f)
+#    return res
+
+#def run_rmb(trial): return f("rmb", trial)
+#def run_rgb(trial): return f("rgb", trial)
+#def run_amb(trial): return f("amb", trial)
+
+
+#if __name__ == '__main__':
+#    pool = Pool(30)
+#    res_rmb = np.array(pool.map(run_rmb, range(trials)))
+#    res_rgb = np.array(pool.map(run_rgb, range(trials)))
+#    res_amb = np.array(pool.map(run_amb, range(trials)))
+
+#%matplotlib inline
+#fig, ax = plt.subplots()
+#x = np.linspace(0, iterations, 11)
+#plt.errorbar(x, np.append([0], np.mean(res_amb, axis=0)), np.append([0], np.std(res_amb, axis=0)), lw=2, label="Active Model Babbling")
+#plt.errorbar(x, np.append([0], np.mean(res_rgb, axis=0)), np.append([0], np.std(res_rgb, axis=0)), lw=2, label="Random Goal Babbling")
+#plt.errorbar(x, np.append([0], np.mean(res_rmb, axis=0)), np.append([0], np.std(res_rmb, axis=0)), lw=2, label="Random Motor Babbling")
+#ax.legend(loc="upper left")
+#plt.savefig('exploration_stats')
